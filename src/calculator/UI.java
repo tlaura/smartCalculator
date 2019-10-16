@@ -32,6 +32,10 @@ public class UI {
                 continue;
             } else if(line.contains("=")){
                 calculator.variables(line);
+            } else if (line.matches("^-?\\d+$")){
+                System.out.println(line);
+            } else if(line.matches("^\\+\\d+$")){
+                System.out.println(line.substring(1));
             } else if(!line.contains("=") && !line.matches("^\\w+$")){
                 calculator.calculations(line);
             } else if (line.matches("^\\w+$")){

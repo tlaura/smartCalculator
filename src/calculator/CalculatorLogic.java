@@ -6,7 +6,7 @@ public class CalculatorLogic {
     private Map<String, Integer> variables = new HashMap<>();
 
     private static boolean isOperator(String c) {
-        return c.equals("+") || c.equals("-") || c.equals("*") || c.equals("/") || c.equals("^");
+        return c.equals("+") || c.equals("-") || c.equals("*") || c.equals("/") || c.equals("^") || c.equals("(") || c.equals(")");
     }
     private static int getPriority(String c){
         switch (c) {
@@ -30,59 +30,46 @@ public class CalculatorLogic {
         Deque<String> stack = new ArrayDeque<>();
         StringBuilder postfix = new StringBuilder();
 
-//        Add operands (numbers and variables) to the result (postfix notation) as they arrive
+//        Add operands (numbers and variables) to the result as they arrive
         String[] equation = line.split(" ");
         for(String e: equation){
             if(isOperand(e)){
-                postfix.append(e);
+                postfix.append(e).append(" ");
             } else if(e.equals("(")) {
                 stack.push(e);
             } else if(e.equals(")")) {
 //                If the incoming element is a right parenthesis,
 //                pop the stack and add operators to the result until you see a left parenthesis
-                while(!stack.isEmpty() && stack.peek() != "(") {
-                    postfix.append(stack.pop());
+                while(!stack.isEmpty() && !stack.peek().equals("(")) {
+                    postfix.append(stack.pop()).append(" ");
+                }
+//                pop '('
+                if(!stack.isEmpty()){
+                    stack.pop();
                 }
             } else if(isOperator(e)) {
-                if(!stack.isEmpty() && getPriority(e) <= getPriority(stack.peek())){
-                    postfix.append(stack.pop());
+                while(!stack.isEmpty() && getPriority(e) <= getPriority(stack.peek())){
+                    postfix.append(stack.pop()).append(" ");
                 }
                 stack.push(e);
             }
         }
         while(!stack.isEmpty()){
-            postfix.append(stack.pop());
+            postfix.append(stack.pop()).append(" ");
         }
         return postfix.toString();
     }
 
-    public int firstNum(String line) {
-        String firstNumString = line;
-        firstNumString = firstNumString.replaceAll("(^[^+|-]+).+", "$1");
-        if(firstNumString.matches("^\\d+$")) {
-            return Integer.parseInt(firstNumString);
-        } else {
-            if(variables.get(firstNumString) != null){
-                return variables.get(firstNumString);
-            } else {
-                return 0;
-            }
-        }
-    }
-
-    public static int firstNumLength(String line){
-        String len = line;
-        len = len.replaceAll("(^[^\\+|-]+).+", "$1");
-        return len.length();
-    }
-
 
     public static String cleanEquation(String line){
-        line = line.replaceAll("\\s+", " ");
+//        add whitespaces before each operator
         String plusRegEx = "(--|\\+)+";
-        line = line.replaceAll(plusRegEx, "+");
+        line = line.replaceAll(plusRegEx, " + ");
         String minusRegex = "(-|---+|-\\+|\\+-)+";
-        line = line.replaceAll(minusRegex, "-");
+        line = line.replaceAll(minusRegex, " - ");
+        line = line.replaceAll("(\\()|(\\))|(\\*)|(\\/)|(\\^)", " $1$2$3$4$5 ");
+//        \\p{Zs} - for non-breaking space
+        line = line.trim().replaceAll("(\\p{Zs})+", " ");
         return line;
     }
 
@@ -99,41 +86,51 @@ public class CalculatorLogic {
         return leftParentheses == rightParentheses;
     }
 
-
     public void calculations(String line){
         try {
-            if((!line.contains("-") && !line.contains("+")
-                    && !line.contains("*") && !line.contains("/") && line.contains(" "))
-                    || line.matches("[\\/|\\*]{2,}")
-                    && !parenthesesCheck(line)){
-                System.out.println("Invalid expression");
+            if ((!line.contains("-") && !line.contains("+")
+                        && !line.contains("*") && !line.contains("/") && line.contains(" "))
+                        || line.matches(".*[\\/|\\*]{2,}.*")
+                        || !parenthesesCheck(line)) {
+                    System.out.println("Invalid expression");
             } else {
                 line = cleanEquation(line);
                 line = postfix(line);
+                System.out.println(line);
+                Deque<Integer> stack = new ArrayDeque<>();
+                String[] equation = line.split(" ");
+                for (String s : equation) {
+                    if (s.matches("^\\d+$")) {
+                        stack.push(Integer.parseInt(s));
+                    } else if (s.matches("^[a-zA-Z]+$")) {
+                        stack.push(variables.get(s));
+                    } else {
+                        int num1 = stack.pop();
+                        int num2 = stack.pop();
 
-//        get first number
-                int firstNum = firstNum(line);
-
-//        delete first number
-                line = line.substring(firstNumLength(line)) + " ";
-
-                int sum = firstNum;
-                while(!line.equals(" ")){
-                    if(line.startsWith("+")){
-                        line = line.substring(1);
-                        firstNum = firstNum(line);
-                        sum += firstNum;
-                        line = line.substring(firstNumLength(line));
-                    } else if(line.startsWith("-")){
-                        line = line.substring(1);
-                        firstNum = firstNum(line);
-                        sum -= firstNum;
-                        line = line.substring(firstNumLength(line));
+                        switch (s){
+                            case "+":
+                                stack.push(num2+num1);
+                                break;
+                            case "-":
+                                stack.push(num2-num1);
+                                break;
+                            case "*":
+                                stack.push(num2*num1);
+                                break;
+                            case "/":
+                                stack.push(num2/num1);
+                                break;
+                            case "^":
+                                stack.push((int)Math.pow(num2, num1));
+                                break;
+                        }
                     }
                 }
-                System.out.println(sum);
+                System.out.println(stack.peek());
             }
-        } catch (NumberFormatException e) {
+        }
+        catch (Exception e) {
             System.out.println("Unknown variable");
         }
     }
