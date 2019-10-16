@@ -1,9 +1,11 @@
 package calculator;
 
 import java.util.*;
+import java.math.BigInteger;
 
 public class CalculatorLogic {
-    private Map<String, Integer> variables = new HashMap<>();
+//   holds bigInteger
+    private Map<String, String> variables = new HashMap<>();
 
     private static boolean isOperator(String c) {
         return c.equals("+") || c.equals("-") || c.equals("*") || c.equals("/") || c.equals("^") || c.equals("(") || c.equals(")");
@@ -29,7 +31,6 @@ public class CalculatorLogic {
     public String postfix(String line){
         Deque<String> stack = new ArrayDeque<>();
         StringBuilder postfix = new StringBuilder();
-
 //        Add operands (numbers and variables) to the result as they arrive
         String[] equation = line.split(" ");
         for(String e: equation){
@@ -96,33 +97,37 @@ public class CalculatorLogic {
             } else {
                 line = cleanEquation(line);
                 line = postfix(line);
-                System.out.println(line);
-                Deque<Integer> stack = new ArrayDeque<>();
+                Deque<String> stack = new ArrayDeque<>();
                 String[] equation = line.split(" ");
                 for (String s : equation) {
                     if (s.matches("^\\d+$")) {
-                        stack.push(Integer.parseInt(s));
+                        stack.push(s);
                     } else if (s.matches("^[a-zA-Z]+$")) {
                         stack.push(variables.get(s));
                     } else {
-                        int num1 = stack.pop();
-                        int num2 = stack.pop();
+                        BigInteger num1 = new BigInteger(stack.pop());
+                        BigInteger num2 = new BigInteger(stack.pop());
 
                         switch (s){
                             case "+":
-                                stack.push(num2+num1);
+                                BigInteger res = num2.add(num1);
+                                stack.push(res.toString());
                                 break;
                             case "-":
-                                stack.push(num2-num1);
+                                res = num2.subtract(num1);
+                                stack.push(res.toString());
                                 break;
                             case "*":
-                                stack.push(num2*num1);
+                                res = num2.multiply(num1);
+                                stack.push(res.toString());
                                 break;
                             case "/":
-                                stack.push(num2/num1);
+                                res = num2.divide(num1);
+                                stack.push(res.toString());
                                 break;
                             case "^":
-                                stack.push((int)Math.pow(num2, num1));
+                                res = num2.pow(num1.intValue());
+                                stack.push(res.toString());
                                 break;
                         }
                     }
@@ -156,7 +161,7 @@ public class CalculatorLogic {
             } else {
                 if(var[1].matches("^\\d+$")){
 //                if value is digits only
-                    variables.put(var[0], Integer.parseInt(var[1]));
+                    variables.put(var[0], var[1]);
                 } else if(var[1].matches("^\\w$")) {
 //                    if variable is assigned a value of another variable
                     if(variables.containsKey(var[1])){
